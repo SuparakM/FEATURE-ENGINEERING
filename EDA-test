@@ -1,0 +1,28 @@
+โหลดไฟล์ตัวอย่างในTeams: wine dataset for eda
+
+import pandas as pd
+df = pd.read_csv(filepath_or_buffer:'winequality-red.csv',sep=';') //ของอาจารย์เขียนแบบนี้ แต่เราทำไม่ได้
+df = pd.read_csv(filepath_or_buffer='winequality-red.csv',sep=';')
+#print(df)
+#print(df.head())
+#print(df.info())
+
+#print(df.columns)
+#print(df.shape)
+#print(df.describe())
+
+print(df.columns)
+#ds_citricacid = df['citric acid','pH'] ไม่ได้
+#ds_citricacid = df['citric acid']
+ds_citricacid = df[['citric acid','pH']]
+print(ds_citricacid)
+print(df)
+print(df.iloc[[0,2,3],:])
+#print(df.iloc[range(1,5),:])
+#print(df.iloc[range(1,5),2])
+print(df.iloc[range(1,5),[0,2,8]])
+print(df.loc[df['fixed acidity']>7,['fixed acidity','pH','alcohol','quality']])
+print(df.loc[df['fixed acidity']>7])
+
+df['newcol'] = 1
+print(df)
