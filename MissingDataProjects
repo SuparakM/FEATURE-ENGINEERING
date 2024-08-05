@@ -1,0 +1,140 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import missingno as msno
+from sklearn.impute import SimpleImputer, KNNImputer
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+from sklearn import linear_model
+
+# Create a DataFrame with some missing values
+df = pd.DataFrame({
+    "Date": pd.date_range(start="2021-10-01", periods=10, freq="D"),
+    "Item": 1014,
+    "Measure_1": np.random.randint(1, 10, size=10),
+    "Measure_2": np.random.random(10).round(2),
+    "Measure_3": np.random.random(10).round(2),
+    "Measure_4": np.random.randn(10)
+})
+print(df)
+print()
+
+# Introduce missing values
+df.loc[[2, 9], "Item"] = np.nan
+df.loc[[2, 7, 9], "Measure_1"] = np.nan
+df.loc[[2, 3], "Measure_2"] = np.nan
+df.loc[[2], "Measure_3"] = np.nan
+df.loc[:6, "Measure_4"] = np.nan
+print(df)
+print()
+
+# Convert columns to integer type
+df = df.astype({
+    "Item": pd.Int64Dtype(),
+    "Measure_1": pd.Int64Dtype()
+})
+print(df)
+print()
+
+# Drop rows with any missing values
+dr = df.dropna()
+print(dr)
+print()
+
+# Drop columns with any missing values
+dc = df.dropna(axis=1)
+print(dc)
+print()
+
+# Drop rows with less than 4 non-NA values
+dt = df.dropna(thresh=4)
+print(dt)
+print()
+
+# Drop rows with missing values in specific columns
+dsb = df.dropna(subset=["Measure_2", "Measure_3"])
+print(dsb)
+print()
+
+# Fill missing values with specified values
+values = {"Item": 1014, "Measure_1": 0}
+dv = df.fillna(value=values)
+print(dv)
+print()
+
+# Fill missing values in 'Measure_2' with mean of 'Measure_2'
+dfm = df["Measure_2"].fillna(df["Measure_2"].mean())
+print(dfm)
+print()
+
+# Read the original dataset
+df = pd.read_csv('travel-times.csv', parse_dates=[['Date', 'StartTime']], index_col='Date_StartTime')
+
+# Generate random missing values on column 'MaxSpeed'
+mask = np.random.choice([True, False], size=df['MaxSpeed'].shape, p=[0.1, 0.9])
+df['MaxSpeed'] = df['MaxSpeed'].mask(mask)
+
+# Check for missing values
+ds = df.isnull().sum()
+print(ds)
+print()
+
+# Visualize missing data
+msno.matrix(df)
+plt.show()
+
+# Mean Imputation
+df_mean = df.copy()
+mean_imputer = SimpleImputer(strategy='mean')
+df_mean['MaxSpeed'] = mean_imputer.fit_transform(df_mean[['MaxSpeed']])
+
+# Scatter plot for Mean Imputation
+fig, ax = plt.subplots()
+null_values = df['MaxSpeed'].isnull()
+df_mean.plot(x="AvgSpeed", y='MaxSpeed', kind='scatter', c=null_values, cmap='winter', title='Mean Imputation', colorbar=False, ax=ax)
+plt.show()
+
+# Plot original 'MaxSpeed'
+df['MaxSpeed'][:100].plot(title="MaxSpeed", marker="o")
+plt.show()
+
+# Forward fill imputation
+ffill_imputation = df.fillna(method='ffill')
+# Plot imputed data
+fig, ax = plt.subplots()
+ffill_imputation['MaxSpeed'][:100].plot(color='red', marker='o', linestyle='dotted', ax=ax)
+df['MaxSpeed'][:100].plot(title='MaxSpeed', marker='o', ax=ax)
+plt.show()
+
+# Linear interpolation imputation
+linear_interpolation = df.interpolate(method='linear')
+# Plot imputed data
+fig, ax = plt.subplots()
+linear_interpolation['MaxSpeed'][:100].plot(color='red', marker='o', linestyle='dotted', ax=ax)
+df['MaxSpeed'][:100].plot(title='MaxSpeed', marker='o', ax=ax)
+plt.show()
+
+# KNN Imputation
+df_knn = df[['Distance', 'MaxSpeed', 'AvgSpeed', 'AvgMovingSpeed']].copy()
+scaler = MinMaxScaler(feature_range=(0, 1))
+df_knn = pd.DataFrame(scaler.fit_transform(df_knn), columns=df_knn.columns)
+knn_imputer = KNNImputer(n_neighbors=5, weights='uniform', metric='nan_euclidean')
+df_knn_imputed = pd.DataFrame(knn_imputer.fit_transform(df_knn), columns=df_knn.columns)
+
+# Scatter plot for KNN Imputation
+fig, ax = plt.subplots()
+null_values = df['MaxSpeed'].isnull()
+df_knn_imputed.plot(x='AvgSpeed', y='MaxSpeed', kind='scatter', c=null_values, cmap='winter', title='KNN Imputation', colorbar=False, ax=ax)
+plt.show()
+
+# MICE Imputation
+df_mice = df[['Distance', 'MaxSpeed', 'AvgSpeed', 'AvgMovingSpeed']].copy()
+mice_imputer = IterativeImputer(estimator=linear_model.BayesianRidge(), n_nearest_features=None, imputation_order='ascending')
+df_mice_imputed = pd.DataFrame(mice_imputer.fit_transform(df_mice), columns=df_mice.columns)
+
+# Scatter plot for MICE Imputation
+fig, ax = plt.subplots()
+null_values = df['MaxSpeed'].isnull()
+df_mice_imputed.plot(x='AvgSpeed', y='MaxSpeed', kind='scatter', c=null_values, cmap='winter', title='MICE Imputation', colorbar=False, ax=ax)
+plt.show()
